@@ -1,78 +1,65 @@
-import { RefObject, useEffect, useState } from 'react';
-import * as todoService from '../../utils/helpers';
+/* eslint-disable @typescript-eslint/indent */
+import { useState } from 'react';
 import { Todo } from '../../types/Todo';
 import { errorMessages, TEMP_TODO } from '../../utils/const';
 import classNames from 'classnames';
+import { addTodo } from '../../utils/helpers';
 
 type Props = {
   todos: Todo[];
-  setTodos: (update: (todos: Todo[]) => Todo[]) => void;
-  setErrorMessage: React.Dispatch<React.SetStateAction<string>>;
-  setHasError: React.Dispatch<React.SetStateAction<boolean>>;
+  setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
+  setError: React.Dispatch<
+    React.SetStateAction<{ hasError: boolean; message: string }>
+  >;
   setTempTodo: React.Dispatch<React.SetStateAction<Todo | null>>;
-  setIsLoading: (isLoading: boolean) => void;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  inputRef: React.RefObject<HTMLInputElement>;
   isLoading: boolean;
-  inputRef: RefObject<HTMLInputElement>;
 };
 export const Header: React.FC<Props> = ({
   todos,
   setTodos,
-  setErrorMessage,
-  setHasError,
+  setError,
   setTempTodo,
   setIsLoading,
-  isLoading,
   inputRef,
+  isLoading,
 }) => {
   const [title, setTitle] = useState<string>('');
 
-  const compleatedTodos = todos.every(todo => todo.completed);
-
-  const handleAddTodo = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimedTitle = title.trim();
-
     if (title.trim()) {
-      setTempTodo({ ...TEMP_TODO, title: title });
+      setTempTodo({ ...TEMP_TODO, title });
       setIsLoading(true);
-      todoService.addTodo(
-        { title: trimedTitle, userId: 1318, completed: false },
-        setTodos,
-        setIsLoading,
-        setTempTodo,
-        setTitle,
-        setHasError,
-        setErrorMessage,
-      );
+      addTodo({ title: title.trim(), userId: 1318, completed: false })
+        .then(newTodo => {
+          setTodos(currentTodos => [...currentTodos, newTodo]);
+          setTitle('');
+        })
+        .catch(() =>
+          setError({ hasError: true, message: errorMessages.addingError }),
+        )
+        .finally(() => {
+          setIsLoading(false);
+          setTempTodo(null);
+        });
     } else {
-      setErrorMessage(errorMessages.emptyError);
-      setHasError(true);
+      setError({ hasError: true, message: errorMessages.emptyError });
     }
   };
-
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [inputRef]);
-
-  useEffect(() => {
-    if (!isLoading && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isLoading, inputRef]);
 
   return (
     <header className="todoapp__header">
       <button
         type="button"
         className={classNames('todoapp__toggle-all', {
-          active: compleatedTodos,
+          active: todos.every(todo => todo.completed),
         })}
         data-cy="ToggleAllButton"
       />
 
-      <form onSubmit={handleAddTodo}>
+      <form onSubmit={handleSubmit}>
         <input
           data-cy="NewTodoField"
           type="text"

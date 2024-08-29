@@ -1,63 +1,48 @@
-import React, { RefObject } from 'react';
+/* eslint-disable prettier/prettier */
+import React from 'react';
 import { Todo } from '../../types/Todo';
 import { TodoItem } from '../TodoItem';
 
 type Props = {
-  todos: Todo[];
-  setTodos: (update: (todos: Todo[]) => Todo[]) => void;
+  filteredTodos: Todo[];
   tempTodo: Todo | null;
   isLoading: boolean;
-  isLoadingWhileDelete: boolean;
-  setIsLoading: (isLoading: boolean) => void;
-  setIsLoadingWhileDelete: (isLoading: boolean) => void;
-  inputRef: RefObject<HTMLInputElement>;
-  setHasError: (value: boolean) => void;
-  setErrorMessage: (message: string) => void;
+  setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
+  setError: React.Dispatch<
+  React.SetStateAction<{ hasError: boolean; message: string }>
+  >;
+  inputRef: React.RefObject<HTMLInputElement>;
 };
 
 export const TodoList: React.FC<Props> = ({
-  todos,
-  setTodos,
+  filteredTodos,
   tempTodo,
   isLoading,
-  setIsLoading,
-  setIsLoadingWhileDelete,
-  isLoadingWhileDelete,
+  setTodos,
+  setError,
   inputRef,
-  setHasError,
-  setErrorMessage,
-}) => {
-  return (
-    <section className="todoapp__main" data-cy="TodoList">
-      {todos.map(todo => (
-        <TodoItem
-          setErrorMessage={setErrorMessage}
-          todo={todo}
-          key={todo.id}
-          setTodos={setTodos}
-          setIsLoading={setIsLoading}
-          isLoadingWhileDelete={isLoadingWhileDelete}
-          setIsLoadingWhileDelete={setIsLoadingWhileDelete}
-          inputRef={inputRef}
-          setHasError={setHasError}
-        />
-      ))}
-      {tempTodo && (
-        <TodoItem
-          setErrorMessage={setErrorMessage}
-          todo={tempTodo}
-          setTodos={setTodos}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-          isLoadingWhileDelete={isLoadingWhileDelete}
-          setIsLoadingWhileDelete={setIsLoadingWhileDelete}
-          inputRef={inputRef}
-          setHasError={setHasError}
-        />
-      )}
-    </section>
-  );
-};
+}) => (
+  <section className="todoapp__main" data-cy="TodoList">
+    {filteredTodos.map(todo => (
+      <TodoItem
+        key={todo.id}
+        todo={todo}
+        setTodos={setTodos}
+        setError={setError}
+        inputRef={inputRef}
+      />
+    ))}
+    {tempTodo && (
+      <TodoItem
+        todo={tempTodo}
+        setTodos={setTodos}
+        setError={setError}
+        inputRef={inputRef}
+        isLoading={isLoading}
+      />
+    )}
+  </section>
+);
 
 //   <div data-cy="TodoLoader" className="modal overlay">
 //     <div className="modal-background has-background-white-ter" />

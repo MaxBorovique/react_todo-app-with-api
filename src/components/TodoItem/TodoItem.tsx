@@ -1,32 +1,29 @@
+/* eslint-disable @typescript-eslint/indent */
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import classNames from 'classnames';
 import { Todo } from '../../types/Todo';
-import { RefObject, useEffect, useState } from 'react';
-import { deleteTodo } from '../../utils/helpers';
+import React, { useEffect, useState } from 'react';
+import { deleteTodo, updateTodoCompleted } from '../../utils/helpers';
+import { errorMessages } from '../../utils/const';
 
 type Props = {
   todo: Todo;
-  setTodos: (update: (todos: Todo[]) => Todo[]) => void;
-  setIsLoading: (isLoading: boolean) => void;
-  setIsLoadingWhileDelete: (isLoading: boolean) => void;
+  setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
+  setError: React.Dispatch<
+    React.SetStateAction<{ hasError: boolean; message: string }>
+  >;
+  inputRef: React.RefObject<HTMLInputElement>;
   isLoading?: boolean;
-  isLoadingWhileDelete: boolean;
-  inputRef: RefObject<HTMLInputElement>;
-  setHasError: (value: boolean) => void;
-  setErrorMessage: (message: string) => void;
 };
 
 export const TodoItem: React.FC<Props> = ({
   todo,
   setTodos,
+  setError,
   isLoading,
-  setIsLoadingWhileDelete,
-  isLoadingWhileDelete,
   inputRef,
-  setHasError,
-  setErrorMessage,
 }) => {
-  const [isCompleated, setIsCompleated] = useState<boolean>(todo.completed);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -34,27 +31,36 @@ export const TodoItem: React.FC<Props> = ({
     }
   });
 
-  const handleDelete = () => {
-    setIsLoadingWhileDelete(true);
-    deleteTodo(
-      todo.id,
-      setTodos,
-      setIsLoadingWhileDelete,
-      setHasError,
-      setErrorMessage,
-      () => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      },
-    );
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteTodo(todo.id);
+      setTodos(currentTodos => currentTodos.filter(t => t.id !== todo.id));
+      inputRef.current?.focus();
+    } catch (error) {
+      setError({ hasError: true, message: errorMessages.deleteError });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleStatusChange = async () => {
+    try {
+      const updatedTodo = await updateTodoCompleted(todo.id, !todo.completed);
+
+      setTodos(currentTodos =>
+        currentTodos.map(t => (t.id === todo.id ? updatedTodo : t)),
+      );
+    } catch (error) {
+      setError({ hasError: true, message: errorMessages.updateError });
+    }
   };
 
   return (
     <div
       data-cy="Todo"
       className={classNames('todo', {
-        completed: isCompleated,
+        completed: todo.completed,
       })}
     >
       <label className="todo__status-label">
@@ -62,8 +68,8 @@ export const TodoItem: React.FC<Props> = ({
           data-cy="TodoStatus"
           type="checkbox"
           className="todo__status"
-          onClick={() => setIsCompleated(prev => !prev)}
-          checked={isCompleated}
+          onClick={handleStatusChange}
+          checked={todo.completed}
         />
       </label>
 
@@ -76,7 +82,7 @@ export const TodoItem: React.FC<Props> = ({
         className="todo__remove"
         data-cy="TodoDelete"
         onClick={handleDelete}
-        disabled={isLoadingWhileDelete}
+        disabled={isDeleting}
       >
         ×
       </button>
@@ -84,7 +90,7 @@ export const TodoItem: React.FC<Props> = ({
       <div
         data-cy="TodoLoader"
         className={classNames('modal overlay', {
-          'is-active': isLoading || isLoadingWhileDelete,
+          'is-active': isLoading || isDeleting,
         })}
       >
         <div className="modal-background has-background-white-ter" />
