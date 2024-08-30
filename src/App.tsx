@@ -33,14 +33,16 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (error.hasError) {
-      const timer = setTimeout(
-        () => setError({ hasError: false, message: '' }),
-        3000,
-      );
-
-      return () => clearTimeout(timer);
+    if (!error.hasError) {
+      return;
     }
+
+    const timer = setTimeout(
+      () => setError({ hasError: false, message: '' }),
+      3000,
+    );
+
+    return () => clearTimeout(timer);
   }, [error.hasError]);
 
   const filteredTodos = useMemo(() => {
