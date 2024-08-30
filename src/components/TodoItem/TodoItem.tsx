@@ -59,6 +59,7 @@ export const TodoItem: React.FC<Props> = ({
       );
     } catch (error) {
       setError({ hasError: true, message: errorMessages.updateError });
+      throw new Error();
     } finally {
       setIsUpdating(false);
       setIsLoading(false);
@@ -100,8 +101,10 @@ export const TodoItem: React.FC<Props> = ({
 
     try {
       await updater({ title: trimmedTitle });
-    } finally {
       setIsEditing(false);
+    } catch {
+      titleFocus.current?.focus();
+    } finally {
       setIsLoading(false);
       setIsUpdating(false);
     }
@@ -132,6 +135,10 @@ export const TodoItem: React.FC<Props> = ({
       setTitle(todo.title);
       setIsEditing(false);
     }
+  };
+
+  const handleDoubleClick = () => {
+    setIsEditing(true);
   };
 
   return (
@@ -169,7 +176,7 @@ export const TodoItem: React.FC<Props> = ({
           <span
             data-cy="TodoTitle"
             className="todo__title"
-            onDoubleClick={() => setIsEditing(true)}
+            onDoubleClick={handleDoubleClick}
           >
             {todo.title}
           </span>
