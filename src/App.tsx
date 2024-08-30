@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getTodos } from './api/todos';
 import { Todo } from './types/Todo';
 import { TodoList } from './components/TodoList';
@@ -22,11 +16,14 @@ export const App: React.FC = () => {
   const [error, setError] = useState({ hasError: false, message: '' });
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [hasVisible, setHasVisible] = useState<boolean>(false);
 
   useEffect(() => {
     getTodos()
-      .then(setTodos)
+      .then(fetchedTodos => {
+        setTodos(fetchedTodos);
+        setHasVisible(true);
+      })
       .catch(() =>
         setError({ hasError: true, message: errorMessages.loadingError }),
       );
@@ -65,10 +62,10 @@ export const App: React.FC = () => {
     setTempTodo,
     isLoading,
     setIsLoading,
-    inputRef,
     selectedFilter,
     setSelectedFilter,
     filteredTodos,
+    hasVisible,
   };
 
   return (

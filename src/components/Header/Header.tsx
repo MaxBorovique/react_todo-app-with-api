@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/indent */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Todo } from '../../types/Todo';
 import { errorMessages, TEMP_TODO } from '../../utils/const';
 import classNames from 'classnames';
-import { addTodo } from '../../utils/helpers';
+import { addTodo, updateTodo } from '../../utils/helpers';
 
 type Props = {
   todos: Todo[];
@@ -13,8 +13,8 @@ type Props = {
   >;
   setTempTodo: React.Dispatch<React.SetStateAction<Todo | null>>;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  inputRef: React.RefObject<HTMLInputElement>;
   isLoading: boolean;
+  hasVisible: boolean;
 };
 export const Header: React.FC<Props> = ({
   todos,
@@ -22,17 +22,27 @@ export const Header: React.FC<Props> = ({
   setError,
   setTempTodo,
   setIsLoading,
-  inputRef,
   isLoading,
+  hasVisible,
 }) => {
   const [title, setTitle] = useState<string>('');
 
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  });
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (title.trim()) {
-      setTempTodo({ ...TEMP_TODO, title });
+    const trimmedTitle = title.trim();
+
+    if (trimmedTitle) {
+      setTempTodo({ ...TEMP_TODO, title: trimmedTitle });
       setIsLoading(true);
-      addTodo({ title: title.trim(), userId: 1318, completed: false })
+      addTodo({ title: trimmedTitle, userId: 1318, completed: false })
         .then(newTodo => {
           setTodos(currentTodos => [...currentTodos, newTodo]);
           setTitle('');
@@ -49,16 +59,43 @@ export const Header: React.FC<Props> = ({
     }
   };
 
+  const statusToggle = async () => {
+    setIsLoading(true);
+
+    const allCompleted = todos.every(todo => todo.completed);
+    const todosToUpdate = todos.filter(todo => todo.completed === allCompleted); // Фільтруємо тільки ті, які потрібно оновити
+
+    const updatedTodos = await Promise.all(
+      todosToUpdate.map(async todo => {
+        const updatedTodo = await updateTodo(todo.id, {
+          completed: !todo.completed,
+        });
+
+        return updatedTodo;
+      }),
+    );
+
+    setTodos(currentTodos =>
+      currentTodos.map(
+        todo => updatedTodos.find(updated => updated.id === todo.id) || todo,
+      ),
+    );
+
+    setIsLoading(false);
+  };
+
   return (
     <header className="todoapp__header">
-      <button
-        type="button"
-        className={classNames('todoapp__toggle-all', {
-          active: todos.every(todo => todo.completed),
-        })}
-        data-cy="ToggleAllButton"
-      />
-
+      {hasVisible && todos.length > 0 && (
+        <button
+          type="button"
+          className={classNames('todoapp__toggle-all', {
+            active: todos.every(todo => todo.completed),
+          })}
+          data-cy="ToggleAllButton"
+          onClick={statusToggle}
+        />
+      )}
       <form onSubmit={handleSubmit}>
         <input
           data-cy="NewTodoField"

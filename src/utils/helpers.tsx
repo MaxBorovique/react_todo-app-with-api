@@ -1,3 +1,4 @@
+import { EditnigProperty } from '../types/EditingProperty';
 import { Todo } from '../types/Todo';
 import { client } from './fetchClient';
 
@@ -29,7 +30,11 @@ export const deleteTodo = (todoId: number): Promise<void> =>
 export const addTodo = (todo: Omit<Todo, 'id'>): Promise<Todo> =>
   client.post<Todo>('/todos', todo);
 
-export const updateTodoCompleted = (
+export const updateTodo = (
   todoId: number,
-  completed: boolean,
-): Promise<Todo> => client.patch<Todo>(`/todos/${todoId}`, { completed });
+  editnigProperty: EditnigProperty,
+): Promise<Todo> => {
+  const [key, value] = Object.entries(editnigProperty)[0];
+
+  return client.patch<Todo>(`/todos/${todoId}`, { [key]: value });
+};
